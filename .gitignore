@@ -1,0 +1,28 @@
+# Build outputs
+build*/
+bin/
+out/
+*.obj
+*.o
+*.lib
+*.a
+*.pdb
+*.exp
+*.ilk
+*.vst3
+*.component
+*.app
+*.exe
+
+# Artefacts
+*_artefacts/
+
+# IDE / Editor artifacts
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# macOS system files
+.DS_Store

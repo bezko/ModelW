@@ -1,0 +1,94 @@
+name: Build ModelW Plugins
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    name: Windows x64 (VST3 & Standalone)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Set up Ninja
+        uses: ashley-taylor/configure-ninja@v1.0.3
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build ModelW (Release)
+        run: |
+          cmake --build build --config Release --parallel
+
+      - name: Upload Windows VST3 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ModelW-Win64-VST3
+          path: build/ModelW_artefacts/Release/VST3/ModelW.vst3
+
+      - name: Upload Windows Standalone Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ModelW-Win64-Standalone
+          path: build/ModelW_artefacts/Release/Standalone/ModelW.exe
+
+  build-macos:
+    name: macOS Apple Silicon / Universal (AU & VST3)
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Ninja
+        run: brew install ninja
+
+      - name: Configure CMake (arm64 + x86_64 Universal)
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
+
+      - name: Build ModelW (Release)
+        run: |
+          cmake --build build --config Release --parallel
+
+      - name: Package macOS AudioUnit (AU) Bundle
+        run: |
+          cd build/ModelW_artefacts/Release/AU
+          zip -r -y "${{ github.workspace }}/ModelW-macOS-AU.zip" ModelW.component
+
+      - name: Package macOS VST3 Bundle
+        run: |
+          cd build/ModelW_artefacts/Release/VST3
+          zip -r -y "${{ github.workspace }}/ModelW-macOS-VST3.zip" ModelW.vst3
+
+      - name: Upload macOS AU Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ModelW-macOS-Universal-AU
+          path: ModelW-macOS-AU.zip
+
+      - name: Upload macOS VST3 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ModelW-macOS-Universal-VST3
+          path: ModelW-macOS-VST3.zip
