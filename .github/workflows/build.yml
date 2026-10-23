@@ -27,7 +27,7 @@ jobs:
           arch: x64
 
       - name: Set up Ninja
-        uses: ashley-taylor/configure-ninja@v1.0.3
+        run: choco install ninja --no-progress
 
       - name: Configure CMake
         run: |
